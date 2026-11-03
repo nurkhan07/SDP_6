@@ -1,0 +1,119 @@
+
+@startuml
+
+title Assignment #6 - Visitor Pattern (File System)
+
+skinparam classAttributeIconSize 0
+
+' =========================
+' CLIENT
+' =========================
+
+class Main {
+    -Main()
+    +main(args: String[]): void
+    -createSampleFileSystem(): FileSystemElement
+}
+
+' =========================
+' ELEMENTS
+' =========================
+
+interface FileSystemElement {
+    +accept(visitor: FileSystemVisitor): void
+}
+
+class File {
+    -name: String
+    -sizeBytes: long
+    +File(name: String, sizeBytes: long)
+    +getName(): String
+    +getSizeBytes(): long
+    +accept(visitor: FileSystemVisitor): void
+}
+
+class Directory {
+    -name: String
+    -children: List<FileSystemElement>
+    +Directory(name: String, children: List<FileSystemElement>)
+    +getName(): String
+    +getChildren(): List<FileSystemElement>
+    +accept(visitor: FileSystemVisitor): void
+}
+
+' =========================
+' VISITOR INTERFACE
+' =========================
+
+interface FileSystemVisitor {
+    +visitFile(file: File): void
+    +visitDirectory(directory: Directory): void
+}
+
+' =========================
+' RECURSIVE VISITOR
+' =========================
+
+abstract class RecursiveFileSystemVisitor {
+    +visitDirectory(directory: Directory): void
+}
+
+class SizeCalculatorVisitor {
+    -totalBytes: long
+    +visitFile(file: File): void
+    +getTotalBytes(): long
+}
+
+class SearchVisitor {
+    -extension: String
+    -matches: List<String>
+    +SearchVisitor(extension: String)
+    +visitFile(file: File): void
+    +getMatches(): List<String>
+}
+
+class FileCountVisitor {
+    -fileCount: int
+    +visitFile(file: File): void
+    +getFileCount(): int
+}
+
+' =========================
+' CONCURRENCY RUNNER
+' =========================
+
+class VisitorTaskRunner {
+    -executor: ExecutorService
+    +VisitorTaskRunner()
+    +run(root: FileSystemElement, visitor: T): Future<T>
+    +close(): void
+}
+
+' =========================
+' RELATIONSHIPS
+' =========================
+
+FileSystemElement <|.. File
+FileSystemElement <|.. Directory
+
+FileSystemVisitor <|.. RecursiveFileSystemVisitor
+
+RecursiveFileSystemVisitor <|-- SizeCalculatorVisitor
+RecursiveFileSystemVisitor <|-- SearchVisitor
+RecursiveFileSystemVisitor <|-- FileCountVisitor
+
+Directory o-- "0..*" FileSystemElement : contains
+
+FileSystemElement ..> FileSystemVisitor : accepts
+
+Main ..> Directory : creates
+Main ..> File : creates
+Main ..> VisitorTaskRunner : uses
+Main ..> SizeCalculatorVisitor : creates
+Main ..> SearchVisitor : creates
+Main ..> FileCountVisitor : creates
+
+VisitorTaskRunner ..> FileSystemElement : processes
+VisitorTaskRunner ..> FileSystemVisitor : executes
+
+@enduml
